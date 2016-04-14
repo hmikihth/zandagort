@@ -1,6 +1,8 @@
 """
 Language module to handle translations
 """
+# TODO: I think the gettext is better, I will cahnge it 
+
 
 from myenum import MyEnum
 from ecosystem import Species
