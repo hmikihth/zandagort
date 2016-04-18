@@ -11,5 +11,5 @@ class Galaxy(object):
             self._planets.append(planet.Planet(config.PlanetClasses.B))
     
     def sim(self):
-        for one_planet in self._planets:
-            one_planet.sim()
+        for planet_n in self._planets:
+            planet_n.sim()
