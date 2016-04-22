@@ -52,7 +52,7 @@ class MyCron(object):
         """Main loop of checker thread"""
         while True:
             self._last_check = datetime.datetime.now()
-            for name, task in self._tasks.iteritems():
+            for name, task in self._tasks.items():
                 task["counter"] += 1
                 if task["counter"] >= task["freq"]:
                     task["counter"] = 0

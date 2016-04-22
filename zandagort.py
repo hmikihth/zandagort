@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#-*- coding:utf-8 -*-
+
 """
 Zandagort server
 
@@ -50,12 +53,12 @@ import sys
 import traceback
 import json
 import datetime
-import Cookie
-from urlparse import urlparse, parse_qs
-import Queue
+import http.cookies
+from urllib.parse import urlparse, parse_qs
+import queue
 import threading
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from SocketServer import ThreadingMixIn
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
 from socket import error as socket_error
 
 import config
@@ -67,20 +70,16 @@ from postcontroller import PostController
 from utils import create_request_string
 
 
-class InnerCommands(MyEnum):  # pylint: disable-msg=R0903
-    """Inner commands for ZandagortServer"""
-    values = ["Sim", "Dump"]
+InnerCommands = MyEnum("InnerCommands", names=["Sim", "Dump"])
 
-class ErrorCodes(MyEnum):  # pylint: disable-msg=R0903
-    """Error codes for ZandagortServer"""
-    values = ["ArgumentSyntaxError"]
+ErrorCodes = MyEnum("ErrorCodes", names=["ArgumentSyntaxError"])
 
 
 def _parse_qs_flat(query):
     """Return flat version of parse_qs. 'q=a,b' becomes "q":"a,b" not "q":["a","b"]"""
     deep_query_dict = parse_qs(query)
     flat_query_dict = {}
-    for key, deep_value in deep_query_dict.iteritems():
+    for key, deep_value in deep_query_dict.items():
         flat_query_dict[key] = deep_value[0]
     return flat_query_dict
 
@@ -134,14 +133,14 @@ class ZandagortRequestHandler(BaseHTTPRequestHandler):
         """Get auth cookie value from HTTP headers"""
         auth_cookie_value = ""
         if "Cookie" in self.headers:
-            cookies = Cookie.SimpleCookie(self.headers["Cookie"])
+            cookies = http.cookies.SimpleCookie(self.headers["Cookie"])
             if config.AUTH_COOKIE_NAME in cookies:
                 auth_cookie_value = cookies[config.AUTH_COOKIE_NAME].value
         return auth_cookie_value
     
     def _get_response(self, method, command, arguments, auth_cookie_value):
         """Get response from core Zandagort Server"""
-        my_queue = Queue.Queue()
+        my_queue = queue.Queue()
         self.server.request_queue.put({
             "response_queue": my_queue,
             "method": method,
@@ -181,7 +180,7 @@ class ZandagortRequestHandler(BaseHTTPRequestHandler):
     
     def _send_cookie(self, cookie_key, cookie_value, expires_from_now, path):
         """Send cookie with key, value, expiry and path"""
-        cookie = Cookie.SimpleCookie()
+        cookie = http.cookies.SimpleCookie()
         cookie[cookie_key] = cookie_value
         expires = datetime.datetime.now() + datetime.timedelta(seconds=expires_from_now)
         cookie[cookie_key]["expires"] = expires.strftime("%a, %d-%b-%Y %H:%M:%S GMT")
@@ -202,7 +201,7 @@ class ZandagortRequestHandler(BaseHTTPRequestHandler):
                 content_type = "text/css"
             else:
                 content_type = "text/html"
-        with open("static/" + filename, "r") as infile:
+        with open("static/" + filename, "rb") as infile:
             content = infile.read()
         self._send_response(content, content_type, True)
 
@@ -221,7 +220,7 @@ class ZandagortServer(object):
     
     def __init__(self, host, port):
         self._address = (host, port)
-        self._request_queue = Queue.Queue()
+        self._request_queue = queue.Queue()
         self._server = ZandagortHTTPServer(self._address, self._request_queue)
         self._server_thread = threading.Thread(target=self._server.serve_forever, name="Server Thread")
         self._server_thread.daemon = True
@@ -234,7 +233,7 @@ class ZandagortServer(object):
             "POST": PostController(self._game),
         }
         self._logfiles = {}
-        for name, filename in config.SERVER_LOG_FILES.iteritems():
+        for name, filename in config.SERVER_LOG_FILES.items():
             self._logfiles[name] = open(config.SERVER_LOG_DIR + "/" + filename, "a", 1)  # line buffered
     
     def start(self):
@@ -249,7 +248,7 @@ class ZandagortServer(object):
             while True:
                 try:
                     request = self._request_queue.get(True, 4)
-                except Queue.Empty:
+                except queue.Empty:
                     continue
                 if "inner_command" in request:
                     self._execute_inner_command(request["inner_command"])
@@ -271,7 +270,7 @@ class ZandagortServer(object):
     def _shutdown(self):
         """Close logfiles"""
         self._log_sys("Shut down.")
-        for _, logfile in self._logfiles.iteritems():
+        for _, logfile in self._logfiles.items():
             logfile.close()
     
     def _execute_inner_command(self, command):
@@ -340,9 +339,9 @@ class ZandagortServer(object):
             message = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + " " + message
         if config.SERVER_LOG_STDOUT.get(logtype, "False"):
             if not raw:
-                print "[" + logtype.upper() + "] " + message
+                print ("[" + logtype.upper() + "] " + message)
             else:
-                print message
+                print (message)
         if logtype in self._logfiles:
             self._logfiles[logtype].write(message + "\n")
     
@@ -362,20 +361,20 @@ class ZandagortServer(object):
 def main():
     """Create, start and run Zandagort Server"""
     
-    print "Launching Zandagort Server..."
+    print ("Launching Zandagort Server...")
     try:
         server = ZandagortServer(config.SERVER_HOST, config.SERVER_PORT)
     except socket_error as serr:
         if serr.errno == errno.EACCES:
-            print "[ERROR] port " + str(config.SERVER_PORT) + " already used by some other service."
-            print "Change it in config.py"
+            print ("[ERROR] port " + str(config.SERVER_PORT) + " already used by some other service.")
+            print ("Change it in config.py")
             return
         else:
             raise
     server.start()
-    print "Zandagort Server launched."
+    print ("Zandagort Server launched.")
     server.serve_forever()  # blocking call
-    print "Zandagort Server shut down."
+    print ("Zandagort Server shut down.")
 
 
 if __name__ == "__main__":

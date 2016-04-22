@@ -57,12 +57,9 @@ CRON_DUMP_INTERVAL = 5
 # Galaxy
 NUMBER_OF_PLANETS = 10000
 
-class PlanetClasses(MyEnum):
-    values = ["A", "B", "C", "D", "E"]
+PlanetClasses = MyEnum("PlanetClasses", names=["A", "B", "C", "D", "E"])
 
-# Ecosystem
-class Species(MyEnum):
-    values = ["null", "ebony", "panda", "tiger"]
+Species = MyEnum("Species", names=["null", "ebony", "panda", "tiger"])
 
 MINIMUM_VIABLE_POPULATION = 10
 
@@ -88,13 +85,9 @@ INITIAL_SPECIES = {
 
 # Economy
 
-## Resources
-class Resources(MyEnum):
-    values = ["raw_stone", "stone", "lumber"]
+Resources = MyEnum("Resources", names=["raw_stone", "stone", "lumber"])
 
-## Buildings
-class Buildings(MyEnum):
-    values = ["quarry", "sawmill"]
+Buildings = MyEnum("Buildings", names=["quarry", "sawmill"])
 
 ## IO Matrix
 BASIC_IOMATRIX = {
